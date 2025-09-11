@@ -1,0 +1,93 @@
+﻿@page "/about"
+@using Microsoft.EntityFrameworkCore
+@layout PortfolioLayout
+@inject IProfileRepository _userProfileRepo
+@rendermode InteractiveServer
+<!-- About Section -->
+<section id="about" class="about section">
+
+	<!-- Section Title -->
+	<div class="container section-title" data-aos="fade-up">
+		<h2>About</h2>
+		<p>Necessitatibus eius consequatur ex aliquid fuga eum quidem sint consectetur velit</p>
+	</div><!-- End Section Title -->
+	@if (profile == null)
+	{
+
+	}
+	else
+	{
+		<div class="container" data-aos="fade-up" data-aos-delay="100">
+
+			<div class="row gy-4 justify-content-center">
+				<div class="col-lg-4">
+					<img src="@profile.ImageUrl" class="img-fluid" alt="@(profile.Name + "," + profile.Profession)">
+				</div>
+				<div class="col-lg-8 content">
+					<h2>profile.Profession</h2>
+					<p class="fst-italic py-3">
+						@profile.Summary
+					</p>
+					<div class="row">
+						<div class="col-lg-6">
+							<ul>
+								<li><i class="bi bi-chevron-right"></i> <strong>Birthday:</strong> <span>@profile.Birthday?.ToString("yyyy.MM.dd")</span></li>
+								<li><i class="bi bi-chevron-right"></i> <strong>Phone:</strong> <span>@profile.Phone</span></li>
+								<li><i class="bi bi-chevron-right"></i> <strong>City:</strong> <span>@profile.Address</span></li>
+							</ul>
+						</div>
+						<div class="col-lg-6">
+							<ul>
+								<li><i class="bi bi-chevron-right"></i> <strong>Age:</strong> <span>@age</span></li>
+								<li><i class="bi bi-chevron-right"></i> <strong>Profession:</strong> <span>@profile.Profession</span></li>
+								<li><i class="bi bi-chevron-right"></i> <strong>Email:</strong> <span>@profile.Email</span></li>
+								<li><i class="bi bi-chevron-right"></i> <strong>Freelance:</strong> <span>@profile.FreelanceStatus</span></li>
+							</ul>
+						</div>
+					</div>
+					<p class="py-3">
+						@profile.About
+					</p>
+				</div>
+			</div>
+
+		</div>
+	}
+</section><!-- /About Section -->
+<SkillsSection Skills="@profile?.Skills.ToList()"></SkillsSection>
+<StatsSection></StatsSection>
+<TestimonialsSection Testimonials="@profile?.Testimonials.ToList()"></TestimonialsSection>
+
+@code {
+	private int age = 0;
+	private Profile? profile;
+
+
+	protected override async Task OnInitializedAsync()
+	{
+		profile = await _userProfileRepo.GetAboutAsync(userId: 1);
+		age = CalculateAge(profile?.Birthday, DateOnly.FromDateTime(DateTime.Now));
+	}
+	
+	internal int CalculateAge(DateOnly? birthDate, DateOnly? endDate)
+	{
+		if (birthDate == null || endDate == null)
+		{
+			return 0;
+		}
+		int age = endDate.Value.Year - birthDate.Value.Year;
+		if (endDate.Value < birthDate.Value.AddYears(age))
+		{
+			age--;
+		}
+		return age;
+	}
+	[Inject] public IJSRuntime JS { get; set; } = default!;
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await JS.InvokeVoidAsync("initGlobalScripts");
+		}
+	}
+}

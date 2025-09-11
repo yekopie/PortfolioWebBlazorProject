@@ -1,0 +1,39 @@
+﻿@page "/"
+@layout PortfolioLayout
+@rendermode InteractiveServer
+<PageTitle>Home</PageTitle>
+
+<!-- Hero Section -->
+@inject IProfileRepository userProfileRepo;
+<section id="hero" class="hero section">
+
+    <img src="/KellyTemplate/assets/img/hero-bg.jpg" alt="" data-aos="fade-in">
+
+    <div class="container text-center" data-aos="zoom-out" data-aos-delay="100">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h2>@(profile?.Name ?? "Yunus Emre Kalaycı")</h2>
+                <p>@(profile?.Summary ?? "Geleceğe yönelik harekatçı")</p>
+                <NavLink href="/about" class="btn-get-started">About Me</NavLink>
+            </div>
+        </div>
+    </div>
+
+</section><!-- /Hero Section -->
+
+
+@code {
+    private Profile? profile;
+    protected override async Task OnInitializedAsync()
+    {
+        profile = await userProfileRepo.FirstOrDefaultAsync(predicate: u => u.Id == 1);
+    }
+    [Inject] public IJSRuntime JS { get; set; } = default!;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("initGlobalScripts");
+        }
+    }
+}

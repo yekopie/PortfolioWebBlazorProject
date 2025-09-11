@@ -1,0 +1,50 @@
+﻿<!-- Skills Section -->
+<section id="skills" class="skills section">
+
+    <!-- Section Title -->
+    <div class="container section-title" data-aos="fade-up">
+        <h2>Skills</h2>
+        <p>Necessitatibus eius consequatur ex aliquid fuga eum quidem sint consectetur velit</p>
+    </div><!-- End Section Title -->
+
+    <div class="container" data-aos="fade-up" data-aos-delay="100">
+
+        <div class="row skills-content skills-animation">
+
+                @if(Skills == null)
+                {
+                    
+                }
+                else if (!Skills.Any())
+                {
+
+                }
+                else
+                {
+                    @foreach(var skillGroup in Skills.Chunk(3))
+                    {
+                        <div class="col-lg-6">
+                        @foreach (var skill in skillGroup)
+                        {
+                            <div class="progress">
+                                <span class="skill"><span>@skill.Name</span> <i class="val">@skill.Percentage%</i></span>
+                                <div class="progress-bar-wrap">
+                                    <div class="progress-bar" role="progressbar" aria-valuenow="@skill.Percentage" aria-valuemin="0" aria-valuemax="100" style="width:@(skill.Percentage)%"></div>
+                                </div>
+                            </div>  <!-- End Skills Item -->
+                        }
+                        </div>
+                    }
+                    
+                }
+
+
+        </div>
+
+    </div>
+
+</section><!-- /Skills Section -->
+@code {
+    [Parameter]
+    public List<Skill> Skills { get; set; } = new();
+}
