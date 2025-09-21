@@ -1,0 +1,23 @@
+﻿<div class="d-flex justify-content-center align-items-center mt-3">
+    <button class="btn btn-outline-primary me-2" @onclick="PreviousPage" disabled="@(CurrentPage <= 1)">Previous</button>
+    <span>Page @CurrentPage of @TotalPages</span>
+    <button class="btn btn-outline-primary ms-2" @onclick="NextPage" disabled="@(CurrentPage >= TotalPages)">Next</button>
+</div>
+
+@code {
+    [Parameter] public int CurrentPage { get; set; }
+    [Parameter] public int TotalPages { get; set; }
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+
+    private async Task PreviousPage()
+    {
+        if (CurrentPage > 1)
+            await OnPageChanged.InvokeAsync(CurrentPage - 1);
+    }
+
+    private async Task NextPage()
+    {
+        if (CurrentPage < TotalPages)
+            await OnPageChanged.InvokeAsync(CurrentPage + 1);
+    }
+}

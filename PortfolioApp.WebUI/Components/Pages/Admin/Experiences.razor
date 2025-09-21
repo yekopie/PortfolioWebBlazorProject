@@ -1,0 +1,199 @@
+﻿@page "/admin/experiences"
+@layout AdminLayout
+@rendermode InteractiveServer
+@inject IGenericRepository<Experience> ExperienceRepository
+
+<h3 class="mb-3" style="color:var(--heading-color);">Experiences</h3>
+
+<!-- Create button -->
+<button class="btn mb-3" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="ShowCreateModal">
+    + New Experience
+</button>
+
+<!-- Table -->
+<table class="table table-striped table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>Job Title</th>
+            <th>Company</th>
+            <th>Address</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Description</th>
+            <th style="width:150px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (ExperiencesList.Count == 0)
+        {
+            <tr>
+                <td colspan="7" class="text-center text-muted">No experiences found</td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var exp in ExperiencesList)
+            {
+                <tr>
+                    <td>@exp.JobTitle</td>
+                    <td>@exp.Company</td>
+                    <td>@exp.CompanyAdress</td>
+                    <td>@exp.StartDate</td>
+                    <td>@(exp.EndDate?.ToString() ?? "-")</td>
+                    <td>@exp.Description</td>
+                    <td>
+                        <button class="btn btn-sm me-1" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="() => ShowUpdateModal(exp)">
+                            Edit
+                        </button>
+                        <button class="btn btn-sm" style="background:#dc3545;color:var(--contrast-color);" @onclick="() => DeleteExperience(exp.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+<!-- Modal -->
+@if (IsModalOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background:var(--surface-color);color:var(--default-color);">
+                <div class="modal-header">
+                    <h5 class="modal-title">@ModalTitle</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@EditingExperience" OnValidSubmit="SaveExperience">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        @if (EditingExperience.Id != 0)
+                        {
+                            <div class="mb-2">
+                                <label>Job Title</label>
+                                <input class="form-control" value="@EditingExperience.Id" readonly />
+                            </div>
+                        }
+
+                        <div class="mb-2">
+                            <label>Job Title</label>
+                            <InputText class="form-control" @bind-Value="EditingExperience.JobTitle" />
+                        </div>
+                        <div class="mb-2">
+                            <label>Company</label>
+                            <InputText class="form-control" @bind-Value="EditingExperience.Company" />
+                        </div>
+                        <div class="mb-2">
+                            <label>Company Address</label>
+                            <InputText class="form-control" @bind-Value="EditingExperience.CompanyAdress" />
+                        </div>
+                        <div class="mb-2">
+                            <label>Start Date</label>
+                            <InputDate class="form-control" @bind-Value="EditingExperience.StartDate" />
+                        </div>
+                        <div class="mb-2">
+                            <label>End Date</label>
+                            <InputDate class="form-control" @bind-Value="EditingExperience.EndDate" />
+                        </div>
+                        <div class="mb-2">
+                            <label>Description</label>
+                            <InputTextArea class="form-control" @bind-Value="EditingExperience.Description" />
+                        </div>
+                    </EditForm>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="SaveExperience">
+                        Save
+                    </button>
+                    <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Experience> ExperiencesList = new();
+    private Experience EditingExperience = new();
+    private bool IsModalOpen = false;
+    private string ModalTitle = "Create Experience";
+
+    protected override async Task OnInitializedAsync()
+    {
+        ExperiencesList = await ExperienceRepository.GetListAsync(predicate: e => e.ProfileId == 1);
+    }
+
+    void ShowCreateModal()
+    {
+        EditingExperience = new Experience { StartDate = DateOnly.FromDateTime(DateTime.Today) };
+        ModalTitle = "Create Experience";
+        IsModalOpen = true;
+    }
+
+    void ShowUpdateModal(Experience exp)
+    {
+        EditingExperience = new Experience
+        {
+            Id = exp.Id,
+            JobTitle = exp.JobTitle,
+            Company = exp.Company,
+            CompanyAdress = exp.CompanyAdress,
+            StartDate = exp.StartDate,
+            EndDate = exp.EndDate,
+            Description = exp.Description,
+            ProfileId = exp.ProfileId
+        };
+        ModalTitle = "Update Experience";
+        IsModalOpen = true;
+    }
+
+    void CloseModal()
+    {
+        IsModalOpen = false;
+    }
+
+    async Task SaveExperience()
+    {
+        if (EditingExperience.Id == 0) // create
+        {
+            await ExperienceRepository.AddAsync(EditingExperience);
+            ExperiencesList.Add(EditingExperience); // client side add
+        }
+        else // update
+        {
+            var existing = await ExperienceRepository.GetByIdAsync(EditingExperience.Id);
+            if (existing != null)
+            {
+                existing.JobTitle = EditingExperience.JobTitle;
+                existing.Company = EditingExperience.Company;
+                existing.CompanyAdress = EditingExperience.CompanyAdress;
+                existing.StartDate = EditingExperience.StartDate;
+                existing.EndDate = EditingExperience.EndDate;
+                existing.Description = EditingExperience.Description;
+
+                await ExperienceRepository.SaveChangesAsync();
+
+                // client side update
+                var index = ExperiencesList.FindIndex(x => x.Id == EditingExperience.Id);
+                if (index >= 0)
+                {
+                    ExperiencesList[index] = existing;
+                }
+            }
+        }
+
+        CloseModal();
+    }
+
+    async Task DeleteExperience(int id)
+    {
+        var experience = await ExperienceRepository.FirstOrDefaultAsync(x => x.Id == id);
+        if (experience == null) return;
+
+        await ExperienceRepository.DeleteAsync(experience);
+        ExperiencesList.RemoveAll(x => x.Id == id);
+    }
+}

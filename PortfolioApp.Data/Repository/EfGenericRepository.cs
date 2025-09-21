@@ -28,14 +28,14 @@ namespace PortfolioApp.Data.Repository
             _dbSet.Update(entity);
             await dbContext.SaveChangesAsync();
         }
-        public async Task<IEnumerable<T>> GetListAsync(
+        public async Task<List<T>> GetListAsync(
             Expression<Func<T, bool>>? predicate = null,
             Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
-            Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null)
+            params Expression<Func<T, object>>[] includes)
         {
             IQueryable<T> query = QueryAsNoTracking();
-            if (include != null)
-                query = include(query);
+            foreach (var include in includes)
+                query = query.Include(include);
             if (predicate != null)
                 query = query.Where(predicate);
 
@@ -54,13 +54,22 @@ namespace PortfolioApp.Data.Repository
 
         public async Task<T?> FirstOrDefaultAsync(
             Expression<Func<T, bool>> predicate = null!,
-             Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null)
+            params Expression<Func<T, object>>[] includes)
         {
             IQueryable<T> query = QueryAsNoTracking();
-            if (include != null)
-                query = include(query);
+
+            foreach (var include in includes)
+                query = query.Include(include);
 
             return await query.FirstOrDefaultAsync(predicate);
+        }
+        public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet.AnyAsync(predicate);
+        }
+        public async Task SaveChangesAsync()
+        {
+            await dbContext.SaveChangesAsync();
         }
     }
 }

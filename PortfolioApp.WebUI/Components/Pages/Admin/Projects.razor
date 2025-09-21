@@ -1,0 +1,256 @@
+﻿@page "/admin/projects"
+@using PortfolioApp.MinimalCore.FileStorage
+@layout AdminLayout
+@inject IGenericRepository<Project> projectRepository
+@inject IGenericRepository<Image> imageRepository
+@inject IFileStorageService FileUploadService
+@rendermode InteractiveServer
+
+<!-- Create button -->
+<button class="btn mb-3" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="ShowCreateModal">
+	+ New Testimonial
+</button>
+
+<!-- Table -->
+<table class="table table-striped table-bordered">
+	<thead class="table-light">
+		<tr>
+			<th>Image</th>
+			<th>Name</th>
+			<th>Link</th>
+			<th>Description</th>
+			<th>Publish Date</th>
+			<th style="width:150px;">Actions</th>
+		</tr>
+	</thead>
+	<tbody>
+		@if (ProjectsList.Count == 0)
+		{
+			<tr>
+				<td colspan="5" class="text-center text-muted">No testimonials found</td>
+			</tr>
+		}
+		else
+		{
+			@foreach (var t in ProjectsList)
+			{
+				<tr>
+					<td>
+						@if (t.Image != null)
+						{
+							<img src="@t.Image.Path" alt="testimonial" width="50" height="50" />
+						}
+					</td>
+					<td>@t.Name</td>
+					<td>@t.ProjectLink</td>
+					<td>@t.Description</td>
+					<td>@t.PublishDate</td>
+					<td>
+						<button class="btn btn-sm me-1" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="() => ShowUpdateModal(t)">
+							Edit
+						</button>
+						<button class="btn btn-sm" style="background:#dc3545;color:var(--contrast-color);" @onclick="() => DeleteProject(t.Id)">
+							Delete
+						</button>
+					</td>
+				</tr>
+			}
+		}
+	</tbody>
+</table>
+
+<!-- Modal -->
+@if (IsModalOpen)
+{
+	<div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5);">
+		<div class="modal-dialog">
+			<div class="modal-content" style="background:var(--surface-color);color:var(--default-color);">
+				<div class="modal-header">
+					<h5 class="modal-title">@ModalTitle</h5>
+					<button type="button" class="btn-close" @onclick="CloseModal"></button>
+				</div>
+				<div class="modal-body">
+					<EditForm Model="@EditingProject" OnValidSubmit="SaveProject">
+						<DataAnnotationsValidator />
+						<ValidationSummary />
+
+						<div class="mb-2">
+							<img src="@EditingImagePath" class="img-fluid" style="max-height:150px; object-fit:contain;" />
+						</div>
+						@if (EditingProject.Id != 0)
+						{
+							<div class="mb-2">
+								<label>Id</label>
+								<input class="form-control" value="@EditingProject.Id" readonly />
+							</div>
+						}
+						<div class="mb-2">
+							<label>Project Name</label>
+							<InputText class="form-control" @bind-Value="EditingProject.Name" />
+						</div>
+						<div class="mb-2">
+							<label>Project Link</label>
+							<InputTextArea class="form-control" @bind-Value="EditingProject.ProjectLink" />
+						</div>
+						<div class="mb-2">
+							<label>Publish Date</label>
+							<InputDate class="form-control" @bind-Value="EditingProject.PublishDate" />
+						</div>
+						<div class="mb-2">
+							<label>Description</label>
+							<InputText class="form-control" @bind-Value="EditingProject.Description" />
+						</div>
+						<div class="mb-2">
+							<label>Image</label>
+							<InputFile OnChange="OnFileChange" multiple />
+						</div>
+					</EditForm>
+				</div>
+				<div class="modal-footer">
+					<button class="btn" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="SaveProject">
+						Save
+					</button>
+					<button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+@code {
+	private List<Project> ProjectsList = new();
+	private Project EditingProject = new();
+	private bool IsModalOpen = false;
+	private string ModalTitle = string.Empty;
+	private IBrowserFile? uploadedFile;
+	private string EditingImagePath = string.Empty;
+	protected override async Task OnInitializedAsync()
+	{
+		ProjectsList = await projectRepository.GetListAsync(
+			predicate: null,
+			orderBy: null,
+			includes: p => p.Image);
+	}
+
+	private void ShowCreateModal()
+	{
+		EditingProject = new Project();
+		EditingImagePath = string.Empty;
+		ModalTitle = "New Project";
+		IsModalOpen = true;
+	}
+	private void ShowUpdateModal(Project project)
+	{
+		EditingProject = new Project
+		{
+			Id = project.Id,
+			Name = project.Name,
+			PublishDate = project.PublishDate,
+			Description = project.Description,
+			ProjectLink = project.ProjectLink,
+			ProfileId = project.ProfileId,
+			ImageId = project.ImageId,
+		};
+		EditingImagePath = project.Image?.Path ?? string.Empty;
+		ModalTitle = "Edit Project";
+		IsModalOpen = true;
+	}
+
+	private void CloseModal()
+	{
+		IsModalOpen = false;
+		EditingProject = new Project();
+		uploadedFile = null;
+		EditingImagePath = string.Empty;
+	}
+	private void OnFileChange(InputFileChangeEventArgs e) => uploadedFile = e.File;
+
+	private async Task<Image?> HandleImageUploadAsync()
+	{
+		if (uploadedFile != null)
+		{
+			using var stream = uploadedFile.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+
+			var result = await FileUploadService.UploadAsync(
+				stream,
+				"images/testimonials",
+				uploadedFile.Name
+			);
+
+			EditingImagePath = "/" + result.Path;
+
+			var imageEntity = new Image
+			{
+				Path = EditingImagePath,
+				Name = result.FileName
+			};
+
+			await imageRepository.AddAsync(imageEntity);
+			await imageRepository.SaveChangesAsync();
+			return imageEntity;
+		}
+		else if (EditingProject.ImageId != 0)
+		{
+			var existingImage = ProjectsList
+				.FirstOrDefault(t => t.ImageId == EditingProject.ImageId)?.Image;
+
+			if (existingImage != null)
+			{
+				existingImage.Path = EditingImagePath;
+				await imageRepository.SaveChangesAsync();
+				return existingImage;
+			}
+		}
+
+		return null;
+	}
+
+	private async Task UpdateTestimonialAsync(Image? imageEntity)
+	{
+		if (imageEntity != null)
+		{
+			EditingProject.ImageId = imageEntity.Id;
+			EditingProject.Image = imageEntity;
+		}
+
+		if (EditingProject.Id == 0)
+		{
+			await projectRepository.AddAsync(EditingProject);
+			ProjectsList.Add(EditingProject);
+		}
+		else
+		{
+			var existing = await projectRepository.GetByIdAsync(EditingProject.Id);
+			if (existing != null)
+			{
+				existing.Name = EditingProject.Name;
+				existing.PublishDate = EditingProject.PublishDate;
+				existing.Description = EditingProject.Description;
+				existing.ProjectLink = EditingProject.ProjectLink;
+				existing.ProfileId = EditingProject.ProfileId;
+				existing.ImageId = EditingProject.ImageId;
+
+				await projectRepository.SaveChangesAsync();
+
+				var index = ProjectsList.FindIndex(x => x.Id == EditingProject.Id);
+				if (index >= 0)
+					ProjectsList[index] = existing;
+			}
+		}
+	}
+
+	private async Task SaveProject()
+	{
+		var entity =await HandleImageUploadAsync();
+		await UpdateTestimonialAsync(entity);
+	}
+	private async Task DeleteProject(int id)
+	{
+		var project = await projectRepository.GetByIdAsync(id);
+		if (project != null)
+		{
+			await projectRepository.DeleteAsync(project);
+			ProjectsList.RemoveAll(p => p.Id == id);
+		}
+	}
+}

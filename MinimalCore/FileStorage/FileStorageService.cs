@@ -2,14 +2,11 @@
 
 namespace PortfolioApp.MinimalCore.FileStorage
 {
-    public class FileStorageService(string rootPath) : IFileStorageService
+    public class FileStorageService(string rootPath = "") : IFileStorageService
     {
         public void Delete(string fileUrl)
         {
-            var uri = new Uri(fileUrl);
-            var relativePath = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/'));
-
-            var filePath = Path.Combine(rootPath, relativePath);
+            var filePath = Path.Combine(rootPath, Uri.UnescapeDataString(fileUrl.TrimStart('/')));
 
             var fullRootPath = Path.GetFullPath(rootPath);
             var fullFilePath = Path.GetFullPath(filePath);
@@ -17,31 +14,34 @@ namespace PortfolioApp.MinimalCore.FileStorage
             if (!fullFilePath.StartsWith(fullRootPath, StringComparison.OrdinalIgnoreCase))
                 throw new UnauthorizedAccessException("Yetkisiz dizin erişimi.");
 
-            if (!File.Exists(filePath))
-                throw new FileNotFoundException("Silinecek dosya bulunamıyor.", filePath);
-
-            File.Delete(filePath);
+            if (File.Exists(fullFilePath))
+                File.Delete(fullFilePath);
         }
 
-        public async Task<string> UploadAsync(
+        public async Task<FileUploadResult> UploadAsync(
             Stream file,
             string relativePath,
             string fileName,
             CancellationToken cancellationToken = default)
         {
-            file.Position = 0;
 
-            var fullDirectoryPath = Path.Combine(rootPath, relativePath);
-            Directory.CreateDirectory(fullDirectoryPath);
+            var extension = Path.GetExtension(fileName);
+            var directoryPath = Path.Combine(rootPath, relativePath);
+            Directory.CreateDirectory(directoryPath);
 
-            var uniqueFileName = $"{Guid.NewGuid()}_{fileName}";
-            var fullFilePath = Path.Combine(fullDirectoryPath, uniqueFileName);
+            var uniqueFileName = $"{Guid.NewGuid()}{extension}";
+            var fullFilePath = Path.Combine(directoryPath, uniqueFileName);
 
             await using var fileStream = new FileStream(fullFilePath, FileMode.Create, FileAccess.Write);
             await file.CopyToAsync(fileStream, cancellationToken);
 
-            var normalizedPath = relativePath.Replace("\\", "/").TrimStart('/');
-            return $"/{normalizedPath}/{uniqueFileName}";
+            return new FileUploadResult
+            {
+                Path = $"{relativePath.Replace("\\", "/").TrimEnd('/')}/{uniqueFileName}",
+                FileName = uniqueFileName,
+                ContentType = extension, // MIME type burada extension değil! ileride değiştirebilirsin
+                Size = fileStream.Length
+            };
         }
     }
 

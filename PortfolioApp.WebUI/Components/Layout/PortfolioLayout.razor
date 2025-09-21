@@ -1,5 +1,4 @@
 ﻿@inherits LayoutComponentBase
-@inject IJSRuntime JS
 <HeadContent>
     <!-- Favicons -->
     <link href="/KellyTemplate/assets/img/favicon.png" rel="icon">
@@ -12,7 +11,6 @@
 
     <!-- Vendor CSS Files -->
     <link href="/KellyTemplate/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/KellyTemplate/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
     <link href="/KellyTemplate/assets/vendor/aos/aos.css" rel="stylesheet">
     <link href="/KellyTemplate/assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
     <link href="/KellyTemplate/assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
@@ -27,8 +25,8 @@
 <!-- Scroll Top -->
 <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
 
-<!-- Preloader -->
-@* <div id="preloader"></div>
+@* <!-- Preloader -->
+<div id="preloader"></div>
  *@
 <!-- Vendor JS Files -->
 <script src="/KellyTemplate/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -42,13 +40,3 @@
 <script src="/KellyTemplate/assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
 <!-- Main JS File -->
 <script src="/KellyTemplate/assets/js/main.js"></script>
-
-@code {
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await JS.InvokeVoidAsync("initGlobalScripts");
-        }
-    }
-}

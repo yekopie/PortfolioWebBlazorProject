@@ -1,4 +1,149 @@
-﻿@inherits LayoutComponentBase
+﻿@using PortfolioApp.WebUI.Components.Shared.Admin
+@using PortfolioApp.WebUI.Dtos
 
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
 
+<HeadContent>
+    <link href="/admin.css" rel="stylesheet" />
+    <link href="/KellyTemplate/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="/KellyTemplate/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet" />
+</HeadContent>
 
+@if (!isAuthenticated)
+{
+    <!-- Login Form -->
+    <section class="vh-100 d-flex align-items-center justify-content-center bg-light">
+        <div class="container">
+            <div class="row justify-content-center align-items-center">
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-lg p-4">
+                        <h3 class="text-center mb-4">Login</h3>
+
+                        <EditForm Model="@LoginDto" OnValidSubmit="Authenticate" FormName="login">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary />
+
+                            <!-- Username input -->
+                            <div class="form-outline mb-4">
+                                <label class="form-label" for="username">Username</label>
+                                <InputText id="username" class="form-control form-control-lg"
+                                           placeholder="Enter username" @bind-Value="LoginDto.Username" />
+                                <ValidationMessage For="() => LoginDto.Username" />
+                            </div>
+
+                            <!-- Password input -->
+                            <div class="form-outline mb-4">
+                                <label class="form-label" for="password">Password</label>
+                                <div class="input-group">
+                                    <InputText id="password"
+                                               class="form-control form-control-lg"
+                                               @bind-Value="LoginDto.Password"
+                                               type="@passwordInputType" />
+                                    <button type="button" class="btn btn-outline-secondary" @onclick="TogglePassword">
+                                        <i class="@passwordIcon"></i>
+                                    </button>
+                                </div>
+                                <ValidationMessage For="() => LoginDto.Password" />
+                            </div>
+
+                            <!-- Remember me -->
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div class="form-check">
+                                    <InputCheckbox id="remember" class="form-check-input"
+                                                   @bind-Value="LoginDto.RememberMe" />
+                                    <label class="form-check-label" for="remember">Remember me</label>
+                                </div>
+                                <a href="#">Forgot password?</a>
+                            </div>
+
+                            <!-- Submit button -->
+                            <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@isLoading">
+                                @if (isLoading)
+                                {
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    <span class="ms-2">Loading...</span>
+                                }
+                                else
+                                {
+                                    <span>Login</span>
+                                }
+                            </button>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+else
+{
+    <!-- Admin UI -->
+    <div class="d-flex light" style="min-height: 100vh;">
+        <AdminNav />
+        <div class="flex-grow-1 p-3">
+            @Body
+        </div>
+    </div>
+}
+
+@code {
+    private bool isAuthenticated;
+    public LoginDto LoginDto { get; set; } = new();
+
+    [Inject] private CustomAuthenticationStateProvider AuthProvider { get; set; }
+
+    private string passwordInputType = "password";
+    private string passwordIcon = "bi bi-eye"; // Bootstrap Icons
+    private bool isLoading = false;
+
+    private void TogglePassword()
+    {
+        if (passwordInputType == "password")
+        {
+            passwordInputType = "text";
+            passwordIcon = "bi bi-eye-slash";
+        }
+        else
+        {
+            passwordInputType = "password";
+            passwordIcon = "bi bi-eye";
+        }
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var state = await AuthProvider.GetAuthenticationStateAsync();
+            isAuthenticated = state.User.Identity?.IsAuthenticated ?? false;
+        }
+
+    }
+
+    private async Task Authenticate()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            await AuthProvider.Login(LoginDto);
+            var state = await AuthProvider.GetAuthenticationStateAsync();
+            isAuthenticated = state.User.Identity?.IsAuthenticated ?? false;
+
+            if (isAuthenticated)
+            {
+                NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

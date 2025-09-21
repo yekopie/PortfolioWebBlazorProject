@@ -14,7 +14,7 @@ namespace PortfolioApp.Data.Context
         public DbSet<Skill> Skills { get; set; }
         public DbSet<Experience> Experiences { get; set; }
         public DbSet<SocialMedia> SocialMedias { get; set; }
-
+        public DbSet<Image> Images { get; set; }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
 
@@ -32,7 +32,8 @@ namespace PortfolioApp.Data.Context
                 new Image { Id = 5, Path = "/images/testimonials/testimonial-1.jpg", Name = "User-1" },
                 new Image { Id = 6, Path = "/images/testimonials/testimonial-2.jpg", Name = "User-2" },
                 new Image { Id = 7, Path = "/images/testimonials/testimonial-3.jpg", Name = "User-3" },
-                new Image { Id = 8, Path = "/images/testimonials/testimonial-4.jpg", Name = "User-4" }
+                new Image { Id = 8, Path = "/images/testimonials/testimonial-4.jpg", Name = "User-4" },
+                new Image { Id = 9, Path = "/images/profile-img.jpg", Name = "Profile Image" }
             );
 
             // Education
@@ -84,7 +85,8 @@ namespace PortfolioApp.Data.Context
                 {
                     Id = 1,
                     Username = "yekopie",
-                    PasswordHash = HashingHelper.HashPassword("admin123"), // Örnek hash, gerçek projede Identity kullan
+                    Role = "Admin",
+                    PasswordHash = HashingHelper.HashPassword("admin123"),
                     ProfileId = 1
                 }
             );
@@ -102,9 +104,9 @@ namespace PortfolioApp.Data.Context
                                 Address = "Istanbul, Turkey",
                                 Profession = "Software Developer",
                                 FreelanceStatus = "Available",
-                                ImageUrl = "/images/profile-img.jpg",
                                 Birthday = new DateOnly(1999, 5, 11),
-                                UserId = 1
+                                UserId = 1,
+                                ImageId = 9
                             }
                         );
             modelBuilder.Entity<SocialMedia>().HasData(
@@ -113,7 +115,12 @@ namespace PortfolioApp.Data.Context
                 new SocialMedia { Id = 3, Icon = "bi bi-instagram", Link = "https://instagram.com/yekopie", ProfileId = 1 },
                 new SocialMedia { Id = 4, Icon = "bi bi-linkedin", Link = "https://www.linkedin.com/in/yekopie", ProfileId = 1 }
             );
-
+            // Profile → Image
+            modelBuilder.Entity<Profile>()
+                .HasOne(p => p.Image)
+                .WithMany() // Image'in back-reference'i yok
+                .HasForeignKey(p => p.ImageId)
+                .OnDelete(DeleteBehavior.Restrict); // veya NoAction
         }
     }
 }

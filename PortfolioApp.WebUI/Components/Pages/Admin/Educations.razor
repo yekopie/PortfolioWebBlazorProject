@@ -1,0 +1,199 @@
+﻿@page "/admin/educations"
+@layout AdminLayout
+@rendermode InteractiveServer
+@inject IGenericRepository<Education> EducationRepository
+
+<h3 class="mb-3" style="color:var(--heading-color);">Educations</h3>
+
+<!-- Create button -->
+<button class="btn mb-3" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="ShowCreateModal">
+    + New Education
+</button>
+
+<!-- Table -->
+<table class="table table-striped table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>Degree</th>
+            <th>Field</th>
+            <th>School</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Description</th>
+            <th style="width:150px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (EducationsList.Count == 0)
+        {
+            <tr>
+                <td colspan="7" class="text-center text-muted">No educations found</td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var edu in EducationsList)
+            {
+                <tr>
+                    <td>@edu.Degree</td>
+                    <td>@edu.Field</td>
+                    <td>@edu.School</td>
+                    <td>@edu.StartDate</td>
+                    <td>@(edu.EndDate?.ToString() ?? "-")</td>
+                    <td>@edu.Description</td>
+                    <td>
+                        <button class="btn btn-sm me-1" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="() => ShowUpdateModal(edu)">
+                            Edit
+                        </button>
+                        <button class="btn btn-sm" style="background:#dc3545;color:var(--contrast-color);" @onclick="() => DeleteEducation(edu.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+<!-- Modal -->
+@if (IsModalOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background:var(--surface-color);color:var(--default-color);">
+                <div class="modal-header">
+                    <h5 class="modal-title">@ModalTitle</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@EditingEducation" OnValidSubmit="SaveEducation">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        @if (EditingEducation.Id != 0)
+                        {
+                            <div class="mb-2">
+                                <label>Id</label>
+                                <input class="form-control" value="@EditingEducation.Id" readonly />
+                            </div>
+                        }
+
+                        <div class="mb-2">
+                            <label>Degree</label>
+                            <InputText class="form-control" @bind-Value="EditingEducation.Degree" />
+                        </div>
+                        <div class="mb-2">
+                            <label>Field</label>
+                            <InputText class="form-control" @bind-Value="EditingEducation.Field" />
+                        </div>
+                        <div class="mb-2">
+                            <label>School</label>
+                            <InputText class="form-control" @bind-Value="EditingEducation.School" />
+                        </div>
+                        <div class="mb-2">
+                            <label>Start Date</label>
+                            <InputDate class="form-control" @bind-Value="EditingEducation.StartDate" />
+                        </div>
+                        <div class="mb-2">
+                            <label>End Date</label>
+                            <InputDate class="form-control" @bind-Value="EditingEducation.EndDate" />
+                        </div>
+                        <div class="mb-2">
+                            <label>Description</label>
+                            <InputTextArea class="form-control" @bind-Value="EditingEducation.Description" />
+                        </div>
+                    </EditForm>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="SaveEducation">
+                        Save
+                    </button>
+                    <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Education> EducationsList = new();
+    private Education EditingEducation = new();
+    private bool IsModalOpen = false;
+    private string ModalTitle = "Create Education";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Tek profil kullanıldığı için ProfileId = 1
+        EducationsList = await EducationRepository.GetListAsync(predicate: e => e.ProfileId == 1);
+    }
+
+    void ShowCreateModal()
+    {
+        EditingEducation = new Education { StartDate = DateOnly.FromDateTime(DateTime.Today), ProfileId = 1 };
+        ModalTitle = "Create Education";
+        IsModalOpen = true;
+    }
+
+    void ShowUpdateModal(Education edu)
+    {
+        EditingEducation = new Education
+        {
+            Id = edu.Id,
+            Degree = edu.Degree,
+            Field = edu.Field,
+            School = edu.School,
+            StartDate = edu.StartDate,
+            EndDate = edu.EndDate,
+            Description = edu.Description,
+            ProfileId = edu.ProfileId
+        };
+        ModalTitle = "Update Education";
+        IsModalOpen = true;
+    }
+
+    void CloseModal()
+    {
+        IsModalOpen = false;
+    }
+
+    async Task SaveEducation()
+    {
+        if (EditingEducation.Id == 0) // create
+        {
+            await EducationRepository.AddAsync(EditingEducation);
+            EducationsList.Add(EditingEducation);
+        }
+        else // update
+        {
+            var existing = await EducationRepository.GetByIdAsync(EditingEducation.Id);
+            if (existing != null)
+            {
+                existing.Degree = EditingEducation.Degree;
+                existing.Field = EditingEducation.Field;
+                existing.School = EditingEducation.School;
+                existing.StartDate = EditingEducation.StartDate;
+                existing.EndDate = EditingEducation.EndDate;
+                existing.Description = EditingEducation.Description;
+
+                await EducationRepository.SaveChangesAsync();
+
+                var index = EducationsList.FindIndex(x => x.Id == EditingEducation.Id);
+                if (index >= 0)
+                {
+                    EducationsList[index] = existing;
+                }
+            }
+        }
+
+        CloseModal();
+    }
+
+    async Task DeleteEducation(int id)
+    {
+        var education = await EducationRepository.FirstOrDefaultAsync(x => x.Id == id);
+        if (education == null) return;
+
+        await EducationRepository.DeleteAsync(education);
+        EducationsList.RemoveAll(x => x.Id == id);
+    }
+}

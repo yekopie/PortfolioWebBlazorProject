@@ -1,0 +1,166 @@
+﻿@page "/admin/skills"
+@layout AdminLayout
+@rendermode InteractiveServer
+@inject IGenericRepository<Skill> SkillRepository
+
+<h3 class="mb-3" style="color:var(--heading-color);">Skills</h3>
+
+<!-- Create button -->
+<button class="btn mb-3" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="ShowCreateModal">
+    + New Skill
+</button>
+
+<!-- Table -->
+<table class="table table-striped table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>Name</th>
+            <th>Percentage</th>
+            <th style="width:150px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (SkillsList.Count == 0)
+        {
+            <tr>
+                <td colspan="3" class="text-center text-muted">No skills found</td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var skill in SkillsList)
+            {
+                <tr>
+                    <td>@skill.Name</td>
+                    <td>@skill.Percentage</td>
+                    <td>
+                        <button class="btn btn-sm me-1" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="() => ShowUpdateModal(skill)">
+                            Edit
+                        </button>
+                        <button class="btn btn-sm" style="background:#dc3545;color:var(--contrast-color);" @onclick="() => DeleteSkill(skill.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+<!-- Modal -->
+@if (IsModalOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background:var(--surface-color);color:var(--default-color);">
+                <div class="modal-header">
+                    <h5 class="modal-title">@ModalTitle</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@EditingSkill" OnValidSubmit="SaveSkill">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        @if (EditingSkill.Id != 0)
+                        {
+                            <div class="mb-2">
+                                <label>Id</label>
+                                <input class="form-control" value="@EditingSkill.Id" readonly />
+                            </div>
+                        }
+
+                        <div class="mb-2">
+                            <label>Name</label>
+                            <InputText class="form-control" @bind-Value="EditingSkill.Name" />
+                        </div>
+                        <div class="mb-2">
+                            <label>Percentage</label>
+                            <InputNumber class="form-control" @bind-Value="EditingSkill.Percentage" />
+                        </div>
+                    </EditForm>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="SaveSkill">
+                        Save
+                    </button>
+                    <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Skill> SkillsList = new();
+    private Skill EditingSkill = new();
+    private bool IsModalOpen = false;
+    private string ModalTitle = "Create Skill";
+
+    protected override async Task OnInitializedAsync()
+    {
+        SkillsList = await SkillRepository.GetListAsync(predicate: s => s.ProfileId == 1);
+    }
+
+    void ShowCreateModal()
+    {
+        EditingSkill = new Skill { ProfileId = 1 };
+        ModalTitle = "Create Skill";
+        IsModalOpen = true;
+    }
+
+    void ShowUpdateModal(Skill skill)
+    {
+        EditingSkill = new Skill
+        {
+            Id = skill.Id,
+            Name = skill.Name,
+            Percentage = skill.Percentage,
+            ProfileId = skill.ProfileId
+        };
+        ModalTitle = "Update Skill";
+        IsModalOpen = true;
+    }
+
+    void CloseModal()
+    {
+        IsModalOpen = false;
+    }
+
+    async Task SaveSkill()
+    {
+        if (EditingSkill.Id == 0) // create
+        {
+            await SkillRepository.AddAsync(EditingSkill);
+            SkillsList.Add(EditingSkill);
+        }
+        else // update
+        {
+            var existing = await SkillRepository.GetByIdAsync(EditingSkill.Id);
+            if (existing != null)
+            {
+                existing.Name = EditingSkill.Name;
+                existing.Percentage = EditingSkill.Percentage;
+
+                await SkillRepository.SaveChangesAsync();
+
+                var index = SkillsList.FindIndex(x => x.Id == EditingSkill.Id);
+                if (index >= 0)
+                {
+                    SkillsList[index] = existing;
+                }
+            }
+        }
+
+        CloseModal();
+    }
+
+    async Task DeleteSkill(int id)
+    {
+        var skill = await SkillRepository.FirstOrDefaultAsync(x => x.Id == id);
+        if (skill == null) return;
+
+        await SkillRepository.DeleteAsync(skill);
+        SkillsList.RemoveAll(x => x.Id == id);
+    }
+}

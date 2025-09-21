@@ -60,7 +60,7 @@
     /**
      * Preloader
      */
-    function removePreloader(){
+    function removePreloader() {
         const preloader = document.querySelector('#preloader');
         if (preloader) {
             preloader.remove();
@@ -197,7 +197,7 @@
         initGlightbox();
         initIsotope();
         initSkillAnimations();
-        removePreloader()
+        removePreloader();
     };
 
     // Ýlk sayfa yüklenince otomatik çalýþsýn

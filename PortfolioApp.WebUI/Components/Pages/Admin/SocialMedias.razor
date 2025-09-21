@@ -1,0 +1,166 @@
+﻿@page "/admin/socials"
+@layout AdminLayout
+@rendermode InteractiveServer
+@inject IGenericRepository<SocialMedia> SocialRepository
+
+<h3 class="mb-3" style="color:var(--heading-color);">Social Media Links</h3>
+
+<!-- Create button -->
+<button class="btn mb-3" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="ShowCreateModal">
+    + New Social Media
+</button>
+
+<!-- Table -->
+<table class="table table-striped table-bordered">
+    <thead class="table-light">
+        <tr>
+            <th>Link</th>
+            <th>Icon</th>
+            <th style="width:150px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (SocialsList.Count == 0)
+        {
+            <tr>
+                <td colspan="3" class="text-center text-muted">No social links found</td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var social in SocialsList)
+            {
+                <tr>
+                    <td>@social.Link</td>
+                    <td>@social.Icon</td>
+                    <td>
+                        <button class="btn btn-sm me-1" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="() => ShowUpdateModal(social)">
+                            Edit
+                        </button>
+                        <button class="btn btn-sm" style="background:#dc3545;color:var(--contrast-color);" @onclick="() => DeleteSocial(social.Id)">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+<!-- Modal -->
+@if (IsModalOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background:var(--surface-color);color:var(--default-color);">
+                <div class="modal-header">
+                    <h5 class="modal-title">@ModalTitle</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@EditingSocial" OnValidSubmit="SaveSocial">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        @if (EditingSocial.Id != 0)
+                        {
+                            <div class="mb-2">
+                                <label>Id</label>
+                                <input class="form-control" value="@EditingSocial.Id" readonly />
+                            </div>
+                        }
+
+                        <div class="mb-2">
+                            <label>Link</label>
+                            <InputText class="form-control" @bind-Value="EditingSocial.Link" />
+                        </div>
+                        <div class="mb-2">
+                            <label>Icon</label>
+                            <InputText class="form-control" @bind-Value="EditingSocial.Icon" />
+                        </div>
+                    </EditForm>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn" style="background:var(--accent-color);color:var(--contrast-color);" @onclick="SaveSocial">
+                        Save
+                    </button>
+                    <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<SocialMedia> SocialsList = new();
+    private SocialMedia EditingSocial = new();
+    private bool IsModalOpen = false;
+    private string ModalTitle = "Create Social Media";
+
+    protected override async Task OnInitializedAsync()
+    {
+        SocialsList = await SocialRepository.GetListAsync(predicate: s => s.ProfileId == 1);
+    }
+
+    void ShowCreateModal()
+    {
+        EditingSocial = new SocialMedia { ProfileId = 1 };
+        ModalTitle = "Create Social Media";
+        IsModalOpen = true;
+    }
+
+    void ShowUpdateModal(SocialMedia social)
+    {
+        EditingSocial = new SocialMedia
+        {
+            Id = social.Id,
+            Link = social.Link,
+            Icon = social.Icon,
+            ProfileId = social.ProfileId
+        };
+        ModalTitle = "Update Social Media";
+        IsModalOpen = true;
+    }
+
+    void CloseModal()
+    {
+        IsModalOpen = false;
+    }
+
+    async Task SaveSocial()
+    {
+        if (EditingSocial.Id == 0) // create
+        {
+            await SocialRepository.AddAsync(EditingSocial);
+            SocialsList.Add(EditingSocial);
+        }
+        else // update
+        {
+            var existing = await SocialRepository.GetByIdAsync(EditingSocial.Id);
+            if (existing != null)
+            {
+                existing.Link = EditingSocial.Link;
+                existing.Icon = EditingSocial.Icon;
+
+                await SocialRepository.SaveChangesAsync();
+
+                var index = SocialsList.FindIndex(x => x.Id == EditingSocial.Id);
+                if (index >= 0)
+                {
+                    SocialsList[index] = existing;
+                }
+            }
+        }
+
+        CloseModal();
+    }
+
+    async Task DeleteSocial(int id)
+    {
+        var social = await SocialRepository.FirstOrDefaultAsync(x => x.Id == id);
+        if (social == null) return;
+
+        await SocialRepository.DeleteAsync(social);
+        SocialsList.RemoveAll(x => x.Id == id);
+    }
+}

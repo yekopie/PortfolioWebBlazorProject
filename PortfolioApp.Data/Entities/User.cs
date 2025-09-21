@@ -14,7 +14,7 @@ public class User
 
     [Required, MaxLength(200)]
     public string PasswordHash { get; set; } = default!;
-
+    public string Role { get; set; } = "Admin";
 
     // Navigation
     [ForeignKey(nameof(Profile))]

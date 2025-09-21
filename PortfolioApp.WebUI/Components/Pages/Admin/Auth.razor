@@ -1,0 +1,14 @@
+﻿@page "/admin/user/auth"
+@layout AdminLayout
+@inject IGenericRepository<User> userRepository
+@rendermode InteractiveServer
+
+
+@code{
+	private User? user;
+
+	protected override async Task OnInitializedAsync()
+	{
+		user = await userRepository.GetByIdAsync(1);
+	}
+}

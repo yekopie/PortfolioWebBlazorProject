@@ -1,0 +1,273 @@
+﻿@using System.Reflection
+@typeparam TEntity
+@inject IGenericRepository<TEntity> Repository
+
+<h3>@Title</h3>
+
+<!-- Create button -->
+<button class="btn btn-primary mb-3" @onclick="ShowCreateModal">+ New @Title</button>
+
+<!-- Table -->
+<table class="table table-striped">
+	<thead>
+		<tr>
+			@foreach (var prop in Properties)
+			{
+				<th>@prop.Name</th>
+			}
+			<th>Actions</th>
+		</tr>
+	</thead>
+	<tbody>
+		@if (Items.Count == 0)
+		{
+			<tr>
+				<td colspan="@((Properties.Length + 1))" class="text-center">No @Title found</td>
+			</tr>
+		}
+		else
+		{
+			@foreach (var item in Items)
+			{
+				<tr>
+					@foreach (var prop in Properties)
+					{
+						<td>@prop.GetValue(item)</td>
+					}
+					<td>
+						<button class="btn btn-sm btn-warning me-1" @onclick="() => ShowUpdateModal(item)">Edit</button>
+						<button class="btn btn-sm btn-danger" @onclick="() => DeleteItem(item)">Delete</button>
+					</td>
+				</tr>
+			}
+		}
+	</tbody>
+</table>
+
+<!-- Modal -->
+@if (IsModalOpen)
+{
+	<div class="modal d-block" style="background: rgba(0,0,0,0.5);">
+		<div class="modal-dialog">
+			<div class="modal-content p-3">
+				<h5>@ModalTitle</h5>
+				<EditForm Model="@EditingItem" OnValidSubmit="SaveItem">
+					<DataAnnotationsValidator />
+					<ValidationSummary />
+					@foreach (var prop in Properties)
+					{
+						if (!prop.PropertyType.IsClass && Nullable.GetUnderlyingType(prop.PropertyType) != null)
+						{
+							// Nullable struct (int?, DateOnly?, bool?) vs.
+							var value = EditingValues[prop.Name];
+							var hasValue = value != null;
+
+							<div class="mb-2">
+								<label>
+									<input type="checkbox" checked="@hasValue" @onchange="e => ToggleNullable(prop.Name, e)" />
+									@prop.Name
+								</label>
+
+								<input class="form-control"
+									   value="@value?.ToString()"
+									   disabled="@( !hasValue )"
+									   @onchange="e => EditingValues[prop.Name] = ConvertValue(prop, e.Value)" />
+							</div>
+						}
+						else
+						{
+							<div class="mb-2">
+								@* Id sadece update modunda görünür *@
+								@if (prop.Name == "Id" && EditingValues[prop.Name] is int id && id != 0)
+								{
+									<label>@prop.Name</label>
+									<input class="form-control" value="@id" disabled />
+								}
+								else if (prop.Name != "Id")
+								{
+									<label>@prop.Name</label>
+
+									@if (prop.PropertyType == typeof(string))
+									{
+										<input type="text" class="form-control"
+											   value="@EditingValues[prop.Name]?.ToString()"
+											   @onchange="e => EditingValues[prop.Name] = e.Value?.ToString()" />
+									}
+									else if (prop.PropertyType == typeof(int) || prop.PropertyType == typeof(int?))
+									{
+										<input type="number" class="form-control"
+											   value="@EditingValues[prop.Name]?.ToString()"
+											   @onchange="e => EditingValues[prop.Name] = int.TryParse(e.Value?.ToString(), out var v) ? v : 0" />
+									}
+									else if (prop.PropertyType == typeof(bool) || prop.PropertyType == typeof(bool?))
+									{
+
+										<input type="checkbox" class="form-check-input"
+											   checked="@((bool?)EditingValues[prop.Name] ?? false)"
+											   @onchange="@(e => EditingValues[prop.Name] = e.Value is bool b ? b : e.Value?.ToString() == "on")" />
+									}
+									else if (prop.PropertyType == typeof(DateOnly) || prop.PropertyType == typeof(DateOnly?))
+									{
+										<input type="date" class="form-control"
+											   value="@GetDateValue(prop.Name)"
+											   @onchange="e => SetDateValue(prop.Name, e.Value?.ToString())" />
+									}
+									else
+									{
+										<input type="text" class="form-control"
+											   value="@EditingValues[prop.Name]?.ToString()"
+											   @onchange="e => EditingValues[prop.Name] = e.Value?.ToString()" />
+									}
+								}
+							</div>
+						}
+					}
+				</EditForm>
+				<div class="mt-2">
+					<button class="btn btn-success me-2" @onclick="SaveItem">Save</button>
+					<button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+@code {
+	[Parameter] public string Title { get; set; } = "Items";
+
+	private List<TEntity> Items = new();
+	private TEntity EditingItem = default!;
+	private bool IsModalOpen = false;
+	private string ModalTitle = "Create";
+
+	private PropertyInfo[] Properties =>
+		typeof(TEntity).GetProperties()
+			.Where(p => p.CanRead && p.CanWrite
+				&& p.PropertyType.IsPrimitive
+				 || p.PropertyType == typeof(string)
+				 || p.PropertyType == typeof(decimal)
+				 || p.PropertyType == typeof(DateTime)
+				 || p.PropertyType == typeof(DateOnly)
+				 || p.PropertyType == typeof(bool)
+				 || p.PropertyType == typeof(int?)
+				 || p.PropertyType == typeof(decimal?)
+				 || p.PropertyType == typeof(DateTime?)
+				 || p.PropertyType == typeof(DateOnly?)
+				 || p.PropertyType == typeof(bool?))
+			.ToArray();
+
+	private Dictionary<string, object?> EditingValues = new();
+
+	protected override async Task OnInitializedAsync()
+	{
+		Items = (await Repository.GetListAsync()).ToList();
+	}
+
+	void ShowCreateModal()
+	{
+		EditingItem = Activator.CreateInstance<TEntity>()!;
+		EditingValues = Properties.ToDictionary(p => p.Name, p => p.GetValue(EditingItem));
+		ModalTitle = $"Create {Title}";
+		IsModalOpen = true;
+	}
+
+	void ShowUpdateModal(TEntity item)
+	{
+		EditingItem = item;
+		EditingValues = Properties.ToDictionary(p => p.Name, p => p.GetValue(item));
+		ModalTitle = $"Update {Title}";
+		IsModalOpen = true;
+	}
+
+	void CloseModal()
+	{
+		IsModalOpen = false;
+	}
+
+	async Task SaveItem()
+	{
+		// dictionary'den entity'ye kopyala
+		foreach (var prop in Properties)
+		{
+			if (prop.Name != "Id")
+			{
+				prop.SetValue(EditingItem, EditingValues[prop.Name]);
+			}
+		}
+
+		var idProp = typeof(TEntity).GetProperty("Id")!;
+		int id = (int)idProp.GetValue(EditingItem)!;
+
+		if (id == 0)
+		{
+			await Repository.AddAsync(EditingItem);
+			Items.Add(EditingItem);
+		}
+		else
+		{
+			var existing = await Repository.GetByIdAsync(id);
+			if (existing != null)
+			{
+				foreach (var prop in Properties.Where(p => p.Name != "Id"))
+				{
+					prop.SetValue(existing, prop.GetValue(EditingItem));
+				}
+				await Repository.SaveChangesAsync();
+				var index = Items.FindIndex(x => (int)idProp.GetValue(x)! == id);
+				if (index >= 0) Items[index] = existing;
+			}
+		}
+
+		CloseModal();
+	}
+
+	async Task DeleteItem(TEntity item)
+	{
+		var idProp = typeof(TEntity).GetProperty("Id")!;
+		int id = (int)idProp.GetValue(item)!;
+		var entity = await Repository.GetByIdAsync(id);
+		if (entity == null) return;
+		await Repository.DeleteAsync(entity);
+		Items.RemoveAll(x => (int)idProp.GetValue(x)! == id);
+	}
+	void ToggleNullable(string propName, ChangeEventArgs e)
+	{
+		if (e.Value is bool b && !b)
+		{
+			EditingValues[propName] = null;
+		}
+		else
+		{
+			var propType = Nullable.GetUnderlyingType(typeof(TEntity).GetProperty(propName)!.PropertyType);
+			if (propType == typeof(int)) EditingValues[propName] = 0;
+			else if (propType == typeof(DateOnly)) EditingValues[propName] = DateOnly.FromDateTime(DateTime.Today);
+			else if (propType == typeof(bool)) EditingValues[propName] = false;
+		}
+	}
+	private string GetDateValue(string propName)
+	{
+		if (EditingValues.TryGetValue(propName, out var value) && value is DateOnly d)
+			return d.ToString("yyyy-MM-dd"); // HTML date input format
+		if (EditingValues.TryGetValue(propName, out value) && value is DateTime dt)
+			return dt.ToString("yyyy-MM-dd"); // Eğer DateTime kullanıyorsan
+		return "";
+	}
+	object? ConvertValue(PropertyInfo prop, object? value)
+	{
+		var targetType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+		if (targetType == typeof(int)) return int.TryParse(value?.ToString(), out var v) ? v : 0;
+		if (targetType == typeof(bool)) return value?.ToString() == "on";
+		if (targetType == typeof(DateOnly)) return DateOnly.Parse(value?.ToString() ?? DateTime.Today.ToString("yyyy-MM-dd"));
+		return value?.ToString();
+	}
+	private void SetDateValue(string propName, string? value)
+	{
+		if (!string.IsNullOrEmpty(value))
+		{
+			if (DateOnly.TryParse(value, out var d))
+				EditingValues[propName] = d;
+			else if (DateTime.TryParse(value, out var dt))
+				EditingValues[propName] = dt;
+		}
+	}
+}

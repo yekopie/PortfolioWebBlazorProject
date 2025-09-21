@@ -10,8 +10,9 @@ public class Image
     public string Path { get; set; } = default!;
     [Required, MaxLength(100)]
     public string Name { get; set; } = default!;
-    public List<Project> Projects { get;set; } = new List<Project>();
-    public List<Testimonial> Testimonials { get;set; } = new List<Testimonial>();
+    public List<Project> Projects { get; set; } = new List<Project>();
+    public List<Profile> Profiles { get; set; } = new List<Profile>();
+    public List<Testimonial> Testimonials { get; set; } = new List<Testimonial>();
 
 
 }

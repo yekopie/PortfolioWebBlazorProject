@@ -1,0 +1,32 @@
+﻿	<!-- Sidebar -->
+<nav class="flex-column flex-shrink-0 p-3" style="width: 25vh; background:#e9e8e6;">
+	<div class="d-flex justify-content-center align-items-center mb-3 mb-md-0">
+		<span class="fs-4 fw-bold">YEKOPIE</span>
+	</div>
+	<hr />
+	<ul class="nav nav-pills flex-column mb-auto">
+		<li class="nav-item">
+			<NavLink class="nav-link" href="/admin">Dashboard</NavLink>
+		</li>
+		<li class="nav-item dropdown">
+			<a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+				User
+			</a>
+			<ul class="dropdown-menu" aria-labelledby="userDropdown">
+				<li>
+					<NavLink class="dropdown-item" href="/admin/user/profile">Profile</NavLink>
+				</li>
+				<li>
+					<NavLink class="dropdown-item" href="/admin/user/auth">Auth</NavLink>
+				</li>
+			</ul>
+		</li>
+		<li><NavLink class="nav-link" href="/admin/testimonials">Testimonials</NavLink></li>
+		<li><NavLink class="nav-link" href="/admin/projects">Projects</NavLink></li>
+		<li><NavLink class="nav-link" href="/admin/skills">Skills</NavLink></li>
+		<li><NavLink class="nav-link" href="/admin/educations">Educations</NavLink></li>
+		<li><NavLink class="nav-link" href="/admin/experiences">Experiences</NavLink></li>
+		<li><NavLink class="nav-link" href="/admin/socials">Social Medias</NavLink></li>
+		<li><NavLink class="nav-link" href="/admin/settings">Settings</NavLink></li>
+	</ul>
+</nav>

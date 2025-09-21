@@ -1,6 +1,6 @@
 ﻿@page "/contact"
 @layout PortfolioLayout
-
+@rendermode InteractiveServer
 <!-- Contact Section -->
 <section id="contact" class="contact section">
 
@@ -86,7 +86,7 @@
     </div>
 
 </section><!-- /Contact Section -->
-@code{
+@code {
     [Inject] public IJSRuntime JS { get; set; } = default!;
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

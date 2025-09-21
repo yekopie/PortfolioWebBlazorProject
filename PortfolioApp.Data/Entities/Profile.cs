@@ -33,8 +33,6 @@ public class Profile
     public string FreelanceStatus { get; set; } = default!;
     [DataType(DataType.Date)]
     public DateOnly? Birthday { get; set; }
-    [MaxLength(250)]
-    public string? ImageUrl { get; set; }
 
     // Navigation
     public ICollection<Project> Projects { get; set; } = new List<Project>();
@@ -43,6 +41,9 @@ public class Profile
     public ICollection<Skill> Skills { get; set; } = new List<Skill>();
     public ICollection<Experience> Experiences { get; set; } = new List<Experience>();
     public ICollection<Education> Educations { get; set; } = new List<Education>();
+    [ForeignKey(nameof(Image))]
+    public int ImageId { get; set; }
+    public Image Image { get; set; } = default!;
     public int UserId { get; set; }
     public User User { get; set; } = default!;
 }

@@ -1,0 +1,132 @@
+﻿@page "/admin/user/profile"
+@layout AdminLayout
+@rendermode InteractiveServer
+@inject IProfileRepository profileRepository
+
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h4>@profile.Name - @profile.Title</h4>
+                </div>
+                <div class="card-body text-center">
+                    <img src="@profile.Image.Path" alt="Profil Fotoğrafı" class="rounded-circle mb-3" width="150" height="150" />
+
+                    <h5>@profile.Profession</h5>
+                    <p class="text-muted">@profile.FreelanceStatus</p>
+
+                    <p>@profile.About</p>
+                    <p><strong>Summary:</strong> @profile.Summary</p>
+
+                    <ul class="list-group list-group-flush text-start mt-3">
+                        <li class="list-group-item"><strong>Email:</strong> @profile.Email</li>
+                        <li class="list-group-item"><strong>Telefon:</strong> @profile.Phone</li>
+                        <li class="list-group-item"><strong>Adres:</strong> @profile.Address</li>
+                        <li class="list-group-item"><strong>Doğum Günü:</strong> @profile.Birthday?.ToString("dd.MM.yyyy")</li>
+                    </ul>
+
+                    <div class="mt-3">
+                        <!-- Modalı açan buton -->
+                        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                            Profili Düzenle
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Düzenleme Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="editProfileModalLabel">Profili Düzenle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                <EditForm model="profile" OnValidSubmit="SaveProfile">
+					<DataAnnotationsValidator />
+					<ValidationSummary />
+                    <input type="hidden" asp-for="Id" />
+
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label"></label>
+                        <InputText @bind-Value="profile.Name" asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label"></label>
+                        <InputText @bind-Value="profile.Title" asp-for="Title" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label"></label>
+                        <InputText @bind-Value="profile.Email" asp-for="Email" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Phone" class="form-label"></label>
+                        <InputText @bind-Value="profile.Phone" asp-for="Phone" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="About" class="form-label"></label>
+                        <InputTextArea @bind-Value="profile.About" asp-for="About" class="form-control" rows="3"></InputTextArea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Summary" class="form-label"></label>
+                        <InputTextArea @bind-Value="profile.Summary" asp-for="Summary" class="form-control" rows="3"></InputTextArea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Address" class="form-label"></label>
+                        <InputText @bind-Value="profile.Address" asp-for="Address" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Profession" class="form-label"></label>
+                        <InputText @bind-Value="profile.Profession" asp-for="Profession" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="FreelanceStatus" class="form-label"></label>
+                        <InputSelect @bind-Value="profile.FreelanceStatus" asp-for="FreelanceStatus" class="form-select">
+                            <option value="Available">Available</option>
+                            <option value="Not Available">Not Available</option>
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Birthday" class="form-label"></label>
+                        <input asp-for="Birthday" class="form-control" type="date" />
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Kaydet</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+@code{
+    private Data.Entities.Profile profile = new();
+    protected override async Task OnInitializedAsync()
+    {
+        profile = await profileRepository.FirstOrDefaultAsync(
+           predicate: u => u.Id == 1,
+           includes: u => u.Image) ?? new();
+    }
+
+    private async Task SaveProfile()
+    {
+        await profileRepository.UpdateAsync(profile);
+	}
+}

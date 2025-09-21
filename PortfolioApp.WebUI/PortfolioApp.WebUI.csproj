@@ -11,13 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Components\Pages\Admin\" />
-    <Folder Include="Components\Shared\Admin\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="wwwroot\images\profile-img.jpg" />
-    <None Include="wwwroot\images\projects\project-1.jpg" />
+    <None Include="wwwroot\images\projects\project-11.jpg" />
     <None Include="wwwroot\images\projects\project-2.jpg" />
     <None Include="wwwroot\images\projects\project-3.jpg" />
     <None Include="wwwroot\images\projects\project-4.jpg" />

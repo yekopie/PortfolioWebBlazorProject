@@ -1,0 +1,95 @@
+﻿:root {
+    --background-color: #ffffff; /* Genel arka plan */
+    --default-color: #444444; /* Genel yazı rengi */
+    --heading-color: #222222; /* Başlıklar */
+    --accent-color: #34b7a7; /* Buton, link ve vurgular */
+    --surface-color: #ffffff; /* Kart ve kutulu elementlerin arka planı */
+    --contrast-color: #ffffff; /* Vurgu üstündeki yazı rengi */
+}
+
+/* Body & genel arka plan */
+body {
+    background-color: var(--background-color);
+    color: var(--default-color);
+    font-family: "Segoe UI", sans-serif;
+}
+
+/* Başlıklar */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--heading-color);
+}
+
+/* Sidebar */
+nav.bg-light {
+    background-color: var(--surface-color) !important;
+}
+/* Dashboard linkine özel stil */
+.dashboard-link {
+    color: var(--heading-color);
+    border-radius: 5px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Yatay ortalama */
+    transition: background-color 0.3s, color 0.3s;
+    text-decoration: none;
+}
+
+    .dashboard-link:hover,
+    .dashboard-link.active {
+        font-weight: 700; /* Sadece yazıyı kalın yap */
+    }
+/* Sidebar linkleri */
+nav .nav-link {
+    color: var(--default-color);
+}
+
+    nav .nav-link.active, nav .nav-link.active, nav .nav-link:hover {
+        color: var(--contrast-color) !important;
+        background-color: var(--accent-color) !important;
+        border-radius: 5px !important;
+    }
+
+/* Kartlar */
+.card {
+    background-color: var(--surface-color);
+    color: var(--default-color);
+    border: 1px solid #e0e0e0;
+}
+
+    .card.text-white.bg-primary {
+        background-color: var(--accent-color) !important;
+        color: var(--contrast-color) !important;
+    }
+
+/* Scroll top button */
+.scroll-top {
+    background-color: var(--accent-color);
+    color: var(--contrast-color);
+}
+
+/* Table */
+.table {
+    background-color: var(--surface-color);
+    color: var(--default-color);
+}
+
+    .table th {
+        color: var(--heading-color);
+    }
+
+    .table tr:nth-child(even) {
+        background-color: #f8f8f8; /* Opsiyonel: çizgili efekt */
+    }
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--contrast-color);
+}
+
+    .btn-primary:hover {
+        background-color: #2d9d8c; /* Accent color koyulaştırılmış hover */
+        border-color: #2d9d8c;
+    }

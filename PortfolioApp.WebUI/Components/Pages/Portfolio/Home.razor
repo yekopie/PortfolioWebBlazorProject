@@ -1,10 +1,10 @@
 ﻿@page "/"
 @layout PortfolioLayout
+@inject IProfileRepository userProfileRepo;
 @rendermode InteractiveServer
 <PageTitle>Home</PageTitle>
 
 <!-- Hero Section -->
-@inject IProfileRepository userProfileRepo;
 <section id="hero" class="hero section">
 
     <img src="/KellyTemplate/assets/img/hero-bg.jpg" alt="" data-aos="fade-in">
@@ -26,7 +26,9 @@
     private Profile? profile;
     protected override async Task OnInitializedAsync()
     {
-        profile = await userProfileRepo.FirstOrDefaultAsync(predicate: u => u.Id == 1);
+        profile = await userProfileRepo.FirstOrDefaultAsync(
+            predicate: u => u.Id == 1, 
+            includes: p => p.Image);
     }
     [Inject] public IJSRuntime JS { get; set; } = default!;
     protected override async Task OnAfterRenderAsync(bool firstRender)
